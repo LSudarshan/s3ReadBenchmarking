@@ -35,15 +35,12 @@ public class App {
 
     private static Options setupCommandlineOptions() {
         Options options = new Options();
-        Option fileSystemoption = new Option("f", "filesystem", true, "File system - ebs | s3v1 | s3v2 ");
+        Option fileSystemoption = new Option("f", "filesystem", true, "File system - s3v1 | s3v2 ");
         fileSystemoption.setRequired(true);
         options.addOption(fileSystemoption);
-        Option inputPathoption = new Option("i", "inputPath", true, "input path - output file path or s3path");
+        Option inputPathoption = new Option("i", "inputPath", true, "input path - s3path - e.g. s3a://bucket/file");
         inputPathoption.setRequired(true);
         options.addOption(inputPathoption);
-        Option outputPathoption = new Option("o", "outputPath", true, "output file path");
-        outputPathoption.setRequired(false);
-        options.addOption(outputPathoption);
         Option accessKey = new Option("a", "awsAccessKey", true, "AWS access key");
         accessKey.setRequired(false);
         options.addOption(accessKey);
