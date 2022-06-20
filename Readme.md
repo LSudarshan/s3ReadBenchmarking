@@ -10,6 +10,7 @@ The intent of this app is to test the sequential and random access read throughp
 | S3 with S3AFilesystem  |                       | |
 | S3 with AWS SDK V2 api |                        | |
 | EBS with NVME          | | |
+| Simple file server     | | |
 
 ### Building
 
@@ -33,6 +34,8 @@ The intent of this app is to test the sequential and random access read throughp
 * EBS
   * Sequential access: `java  -jar /tmp/app-all.jar --filesystem ebs --inputPath "/path/to/file" --pageCacheSize "8388608" --numThreads 1`
   * Random access: `java  -jar /tmp/app-all.jar --filesystem ebs --inputPath "/path/to/file" --numThreads 1 --accessType RandomAccess --numberOfRecords 100000 --recordSize 1048576`
+* File server
+  * Random access: `java  -jar /tmp/app-all.jar --filesystem fileServer --fileServerHost 127.0.0.1 --fileServerPort 9000 --inputPath "/path/to/file" --numThreads 1 --numberOfRecords 100000 --recordSize 1048576 --numberOfRecordsPerFileServerRequest 10`
 
 
 ### Monitoring 

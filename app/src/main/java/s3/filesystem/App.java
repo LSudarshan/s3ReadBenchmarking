@@ -27,6 +27,15 @@ public class App {
                 MultiThreadedRandomAccessEBSReader reader = new MultiThreadedRandomAccessEBSReader(cmd.getOptionValue("inputPath"), numThreads, Long.parseLong(cmd.getOptionValue("numberOfRecords")), cmd.getOptionValue("recordSize"));
                 reader.read();
             }
+        } else if (cmd.getOptionValue("filesystem").equals("fileServer")){
+            int numThreads = Integer.parseInt(cmd.getOptionValue("numThreads"));
+            MultiThreadedRandomAccessFileServerReader reader = new MultiThreadedRandomAccessFileServerReader(
+                    cmd.getOptionValue("inputPath"),
+                    cmd.getOptionValue("fileServerHost"), Integer.parseInt(cmd.getOptionValue("fileServerPort", "9000")),
+                    numThreads,
+                    Long.parseLong(cmd.getOptionValue("numberOfRecords")), cmd.getOptionValue("recordSize"),
+                    Integer.parseInt(cmd.getOptionValue("numberOfRecordsPerFileServerRequest")));
+            reader.read();
         } else if (cmd.getOptionValue("filesystem").equals("s3v2")){
             int numThreads = Integer.parseInt(cmd.getOptionValue("numThreads"));
             MultiThreadedS3Version2SequentialAccessReader s3ReaderV2 = new MultiThreadedS3Version2SequentialAccessReader(cmd.getOptionValue("awsAccessKey"), cmd.getOptionValue("awsSecretKey"), cmd.getOptionValue("inputPath"), cmd.getOptionValue("pageCacheSize"), numThreads);
@@ -47,7 +56,7 @@ public class App {
 
     private static Options setupCommandlineOptions() {
         Options options = new Options();
-        Option fileSystemoption = new Option("f", "filesystem", true, "File system - s3v1 | s3v2 ");
+        Option fileSystemoption = new Option("f", "filesystem", true, "File system - s3v1 | s3v2 | ebs | fileserver ");
         fileSystemoption.setRequired(true);
         options.addOption(fileSystemoption);
         Option inputPathoption = new Option("i", "inputPath", true, "input path - s3path - e.g. s3a://bucket/file");
@@ -74,6 +83,16 @@ public class App {
         Option recordSize = new Option("recordSize", "recordSize", true, "record Size for random access type");
         recordSize.setRequired(false);
         options.addOption(recordSize);
+        Option fileServerHost = new Option("fileServerHost", "fileServerHost", true, "file server host when filesystem option is fileServer");
+        fileServerHost.setRequired(false);
+        options.addOption(fileServerHost);
+        Option fileServerPort = new Option("fileServerPort", "fileServerPort", true, "file server port when filesystem option is fileServer");
+        fileServerPort.setRequired(false);
+        options.addOption(fileServerPort);
+        Option numberOfRecordsPerFileServerRequest = new Option("numberOfRecordsPerFileServerRequest", "numberOfRecordsPerFileServerRequest", true, "Number of records batched in each request to file server when filesystem option is fileServer");
+        numberOfRecordsPerFileServerRequest.setRequired(false);
+        options.addOption(numberOfRecordsPerFileServerRequest);
+
         return options;
     }
 

@@ -30,6 +30,7 @@ public class MultiThreadedRandomAccessEBSReader {
     public void read() throws InterruptedException {
         long totalLength = getTotalLength();
         long lengthPerThread = totalLength / numThreads;
+        long t3 = System.currentTimeMillis();
         System.out.println("Total length of file: " + totalLength);
         System.out.println("Number of threads: " + numThreads);
         System.out.println("Length per thread: " + lengthPerThread);
@@ -54,6 +55,8 @@ public class MultiThreadedRandomAccessEBSReader {
         for (Thread thread : threads) {
             thread.join();
         }
+        long t4 = System.currentTimeMillis();
+        System.out.println("Total Time to read across all threads = " + (t4-t3) + "ms");
     }
 
     private long getTotalLength() {
@@ -74,7 +77,7 @@ public class MultiThreadedRandomAccessEBSReader {
             try {
                 int read = raf.read(page);
                 long t2 = System.currentTimeMillis();
-                System.out.println("Thread id: " + Thread.currentThread().getId() + ", Time to read " + read + " bytes = " + (t2-t1) + "ms" + ", with number of records read: " + numberOfRecordsRead);
+                System.out.println("Thread id: " + Thread.currentThread().getId() + ", Time to read " + read + " bytes = " + (t2-t1) + "ms");
             } catch (EOFException e) {
                 System.out.println("Trying to read from offset: " + currentRandomAccessRecordOffset + " with size: " + recordSize + ", but got EOFException: " + e.getMessage());
             }
@@ -84,6 +87,6 @@ public class MultiThreadedRandomAccessEBSReader {
             }
         }
         long t4 = System.currentTimeMillis();
-        System.out.println("Thread id: " + Thread.currentThread().getId() + ", Total Time to read = " + (t4-t3) + "ms");
+        System.out.println("Thread id: " + Thread.currentThread().getId() + ", Total Time to read = " + (t4-t3) + "ms" + " for number of records: " + numberOfRecordsRead);
     }
 }
