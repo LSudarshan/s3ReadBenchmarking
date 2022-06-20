@@ -63,7 +63,7 @@ public class MultiThreadedSequentialAccessEBSReader {
         byte[] buffer = new byte[pageCacheSize];
         BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(input), pageCacheSize);
         long t1 = System.currentTimeMillis();
-        int totalBytesRead = 0;
+        long totalBytesRead = 0;
         while (true) {
             long t3 = System.currentTimeMillis();
             int read = bufferedInputStream.read(buffer, 0, pageCacheSize);
@@ -71,6 +71,7 @@ public class MultiThreadedSequentialAccessEBSReader {
             System.out.println("bytes read: " + read + " in : " + (t4-t3) + " ms, in thread id: " + Thread.currentThread().getId());
             if (read == -1){
                 System.out.println("Reached end of stream, total bytes read: " + totalBytesRead + " in thread id: " + Thread.currentThread().getId());
+                break;
             }
 
             totalBytesRead+= read;

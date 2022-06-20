@@ -70,7 +70,7 @@ public class App {
         options.addOption(accessType);
         Option numberOfRecords = new Option("numberOfRecords", "numberOfRecords", true, "Number of records to be read for random access type");
         numberOfRecords.setRequired(false);
-        options.addOption(accessType);
+        options.addOption(numberOfRecords);
         Option recordSize = new Option("recordSize", "recordSize", true, "record Size for random access type");
         recordSize.setRequired(false);
         options.addOption(recordSize);
