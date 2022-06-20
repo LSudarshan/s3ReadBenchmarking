@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MultiThreadedS3Version2Reader {
+public class MultiThreadedS3Version2SequentialAccessReader {
 
     private final String bucket;
     private final String file;
@@ -15,7 +15,7 @@ public class MultiThreadedS3Version2Reader {
     private String secretKey;
     private int numThreads;
 
-    public MultiThreadedS3Version2Reader(String accessKey, String secretKey, String input, String pageCacheSize, int numThreads) {
+    public MultiThreadedS3Version2SequentialAccessReader(String accessKey, String secretKey, String input, String pageCacheSize, int numThreads) {
         this.accessKey = accessKey;
         this.secretKey = secretKey;
         this.numThreads = numThreads;

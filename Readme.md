@@ -5,11 +5,11 @@ The intent of this app is to test the sequential and random access read throughp
 
 ### Table of results
 
-| Backend               | Sequential Read throughput | Random access Read throuput |
-|-----------------------|----------------------------|-----------------------------|
-| S3 with S3AFilesystem |                       | |
-| S3 with AWS SK V2 api |                        | |
-| EBS with NVME         | | |
+| Backend                | Sequential Read throughput | Random access Read throuput |
+|------------------------|----------------------------|-----------------------------|
+| S3 with S3AFilesystem  |                       | |
+| S3 with AWS SDK V2 api |                        | |
+| EBS with NVME          | | |
 
 ### Building
 
@@ -21,6 +21,19 @@ The intent of this app is to test the sequential and random access read throughp
   Example run command:
 
 `java  -jar /tmp/app-all.jar -f s3v1 -i "s3a://<bucket>/<file>" -a $ACCESS_KEY -s $SECRET_KEY -p "10000000" -t 1`
+
+### The commands to run
+
+* S3 with S3AFileSystem
+  * Sequential access: `java  -jar /tmp/app-all.jar --filesystem s3v1 --inputPath "s3a://<bucket>/<file>" --awsAccessKey $ACCESS_KEY --awsSecretKey $SECRET_KEY --pageCacheSize "10000000" --numThreads 1`
+  * Random access: `java  -jar /tmp/app-all.jar --filesystem s3v1 --inputPath "s3a://<bucket>/<file>" --awsAccessKey $ACCESS_KEY --awsSecretKey $SECRET_KEY --numThreads 1 --accessType RandomAccess --numberOfRecords 100000 --recordSize 1048576`
+* S3 with AWS SDK V2 api
+  * Sequential access: `java  -jar /tmp/app-all.jar --filesystem s3v2 --inputPath "s3a://<bucket>/<file>" --awsAccessKey $ACCESS_KEY --awsSecretKey $SECRET_KEY --pageCacheSize "8388608" --numThreads 1`
+  * Random access: `java  -jar /tmp/app-all.jar --filesystem s3v2 --inputPath "s3a://<bucket>/<file>" --awsAccessKey $ACCESS_KEY --awsSecretKey $SECRET_KEY --numThreads 1 --accessType RandomAccess --numberOfRecords 100000 --recordSize 1048576`
+* EBS
+  * Sequential access: `java  -jar /tmp/app-all.jar --filesystem ebs --inputPath "/path/to/file" --pageCacheSize "8388608" --numThreads 1`
+  * Random access: `java  -jar /tmp/app-all.jar --filesystem ebs --inputPath "/path/to/file" --numThreads 1 --accessType RandomAccess --numberOfRecords 100000 --recordSize 1048576`
+
 
 ### Monitoring 
 

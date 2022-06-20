@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class MultiThreadedS3Version1Reader {
+public class MultiThreadedS3Version1SequentialAccessReader {
 
     private final S3AFileSystem s3AFileSystem;
     private final long totalLength;
@@ -22,7 +22,7 @@ public class MultiThreadedS3Version1Reader {
     private String input;
     private int numThreads;
 
-    public MultiThreadedS3Version1Reader(String accessKey, String secretKey, String input, String pageCacheSize, int numThreads) throws IOException {
+    public MultiThreadedS3Version1SequentialAccessReader(String accessKey, String secretKey, String input, String pageCacheSize, int numThreads) throws IOException {
         this.numThreads = numThreads;
         s3AFileSystem = new S3AFileSystem();
         if(!StringUtils.isBlank(pageCacheSize)){

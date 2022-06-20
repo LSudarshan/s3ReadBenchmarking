@@ -19,16 +19,28 @@ public class App {
         }
 
         if (cmd.getOptionValue("filesystem").equals("ebs")){
-            readFile(cmd.getOptionValue("inputPath"), cmd.getOptionValue("outputPath"));
+            int numThreads = Integer.parseInt(cmd.getOptionValue("numThreads"));
+            if (cmd.getOptionValue("accessType", "Sequential").equals("Sequential")) {
+                MultiThreadedSequentialAccessEBSReader reader = new MultiThreadedSequentialAccessEBSReader(cmd.getOptionValue("inputPath"), numThreads, cmd.getOptionValue("pageCacheSize"));
+                reader.read();
+            } else {
+                MultiThreadedRandomAccessEBSReader reader = new MultiThreadedRandomAccessEBSReader(cmd.getOptionValue("inputPath"), numThreads, Long.parseLong(cmd.getOptionValue("numberOfRecords")), cmd.getOptionValue("recordSize"));
+                reader.read();
+            }
         } else if (cmd.getOptionValue("filesystem").equals("s3v2")){
             int numThreads = Integer.parseInt(cmd.getOptionValue("numThreads"));
-            MultiThreadedS3Version2Reader s3ReaderV2 = new MultiThreadedS3Version2Reader(cmd.getOptionValue("awsAccessKey"), cmd.getOptionValue("awsSecretKey"), cmd.getOptionValue("inputPath"), cmd.getOptionValue("pageCacheSize"), numThreads);
+            MultiThreadedS3Version2SequentialAccessReader s3ReaderV2 = new MultiThreadedS3Version2SequentialAccessReader(cmd.getOptionValue("awsAccessKey"), cmd.getOptionValue("awsSecretKey"), cmd.getOptionValue("inputPath"), cmd.getOptionValue("pageCacheSize"), numThreads);
             s3ReaderV2.read();
         }
-        else {
+        else if (cmd.getOptionValue("filesystem").equals("s3v1")){
             int numThreads = Integer.parseInt(cmd.getOptionValue("numThreads"));
-            MultiThreadedS3Version1Reader s3ReaderV1 = new MultiThreadedS3Version1Reader(cmd.getOptionValue("awsAccessKey"), cmd.getOptionValue("awsSecretKey"), cmd.getOptionValue("inputPath"), cmd.getOptionValue("pageCacheSize"), numThreads);
-            s3ReaderV1.read();
+            if (cmd.getOptionValue("accessType", "Sequential").equals("Sequential")) {
+                MultiThreadedS3Version1SequentialAccessReader s3ReaderV1 = new MultiThreadedS3Version1SequentialAccessReader(cmd.getOptionValue("awsAccessKey"), cmd.getOptionValue("awsSecretKey"), cmd.getOptionValue("inputPath"), cmd.getOptionValue("pageCacheSize"), numThreads);
+                s3ReaderV1.read();
+            } else {
+                MultiThreadedS3Version1RandomAccessReader reader = new MultiThreadedS3Version1RandomAccessReader(cmd.getOptionValue("awsAccessKey"), cmd.getOptionValue("awsSecretKey"), cmd.getOptionValue("inputPath"), numThreads, Long.parseLong(cmd.getOptionValue("numberOfRecords")), cmd.getOptionValue("recordSize"));
+                reader.read();
+            }
         }
 
     }
@@ -53,22 +65,17 @@ public class App {
         Option numThreads = new Option("t", "numThreads", true, "Number of threads");
         numThreads.setRequired(false);
         options.addOption(numThreads);
+        Option accessType = new Option("accessType", "accessType", true, "Access type = sequential | randomAccess");
+        accessType.setRequired(false);
+        options.addOption(accessType);
+        Option numberOfRecords = new Option("numberOfRecords", "numberOfRecords", true, "Number of records to be read for random access type");
+        numberOfRecords.setRequired(false);
+        options.addOption(accessType);
+        Option recordSize = new Option("recordSize", "recordSize", true, "record Size for random access type");
+        recordSize.setRequired(false);
+        options.addOption(recordSize);
         return options;
     }
 
 
-    public static void readFile(String input, String output) throws IOException {
-        InputStream is = new BufferedInputStream(new FileInputStream(input), 8192);
-
-        OutputStream baos = new BufferedOutputStream(new FileOutputStream(output), 8192);
-
-
-        long t3 = System.currentTimeMillis();
-        byte[] bytes = is.readAllBytes();
-        baos.write(bytes,0,bytes.length - 1);
-        long t4 = System.currentTimeMillis();
-        System.out.println("Time to read = " + (t4-t3) + "ms");
-        is.close();
-        baos.close();
-    }
 }

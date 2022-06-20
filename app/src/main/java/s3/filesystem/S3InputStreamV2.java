@@ -1,6 +1,8 @@
 package s3.filesystem;
 
 
+import jdk.jshell.spi.ExecutionControl;
+import org.apache.commons.lang3.NotImplementedException;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -77,6 +79,16 @@ public class S3InputStreamV2 extends InputStream {
         }
 
         return buffer[this.next++] & 0xFF;
+    }
+
+    @Override
+    public int read(byte[] b) throws IOException {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+        throw new NotImplementedException();
     }
 
     public void fill() throws IOException {
