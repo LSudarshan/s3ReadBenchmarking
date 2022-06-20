@@ -1,6 +1,15 @@
 ### Intent
 
-The intent of this app is to test the read throughput of S3 in an EC2 instance.
+The intent of this app is to test the sequential and random access read throughput in an EC2 instance against different backends
+
+
+### Table of results
+
+| Backend               | Sequential Read throughput | Random access Read throuput |
+|-----------------------|----------------------------|-----------------------------|
+| S3 with S3AFilesystem |                       | |
+| S3 with AWS SK V2 api |                        | |
+| EBS with NVME         | | |
 
 ### Building
 
