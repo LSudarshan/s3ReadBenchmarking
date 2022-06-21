@@ -5,12 +5,12 @@ The intent of this app is to test the sequential and random access read throughp
 
 ### Table of results
 
-| Backend                | Sequential Read throughput | Random access Read throuput |
-|------------------------|----------------------------|-----------------------------|
-| S3 with S3AFilesystem  |                       | |
-| S3 with AWS SDK V2 api |                        | |
-| EBS with NVME          | | |
-| Simple file server     | | |
+| Backend                | Sequential Read throughput                | Random access Read throuput                                                           |
+|------------------------|-------------------------------------------|---------------------------------------------------------------------------------------|
+| S3 with S3AFilesystem  | 170 MB/s  - 10MB page cache and 7 threads | 5.48 MB/s - 8KB record size, 8KB page cache, 7 threads                                |
+| S3 with AWS SDK V2 api |                                           |                                                                                       |
+| EBS with NVME          | 190 MB/s - 10MB page cache and 7 Threads  | 35 MB/s -  8KB record size, 8KB page cache, 7 threads                                 |
+| Simple file server     | 80 MB/s  - 10MB page cache and 7 threads  | 24 MB/s - 8KB record size, 8KB page cache, 100 records batched per request, 7 threads |
 
 ### Building
 
@@ -36,6 +36,7 @@ The intent of this app is to test the sequential and random access read throughp
   * Random access: `java  -jar /tmp/app-all.jar --filesystem ebs --inputPath "/path/to/file" --numThreads 1 --accessType RandomAccess --numberOfRecords 100000 --recordSize 1048576`
 * File server
   * Random access: `java  -jar /tmp/app-all.jar --filesystem fileServer --fileServerHost 127.0.0.1 --fileServerPort 9000 --inputPath "/path/to/file" --numThreads 1 --numberOfRecords 100000 --recordSize 1048576 --numberOfRecordsPerFileServerRequest 10`
+  * Sequential access: `java  -jar /tmp/app-all.jar --filesystem fileServer --fileServerHost 127.0.0.1 --fileServerPort 9000 --inputPath "/path/to/file" --pageCacheSize "8192" --numThreads 1 --dataPerFileServerRequest 1048576`
 
 
 ### Monitoring 
@@ -56,3 +57,11 @@ The intent of this app is to test the sequential and random access read throughp
 * Using s3v2, with 10 threads, we get 100 MBps
   * `java  -jar /tmp/app-all.jar -f s3v2 -i "s3a://<bucket>/<file>" -a $ACCESS_KEY -s $SECRET_KEY -p "10000000" -t 10`
 
+### Getting EC2 instance ready
+
+* `wget --no-check-certificate -c --header "Cookie: oraclelicense=accept-securebackup-cookie" https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.rpm`
+* `sudo rpm -Uvh jdk-17_linux-x64_bin.rpm`
+* `yum install iotop`
+* `sudo amazon-linux-extras install epel -y`
+* `sudo yum-config-manager --enable epel`
+* `sudo yum --enablerepo=epel install vnstat`

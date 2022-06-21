@@ -18,36 +18,52 @@ public class App {
             System.exit(1);
         }
 
-        if (cmd.getOptionValue("filesystem").equals("ebs")){
-            int numThreads = Integer.parseInt(cmd.getOptionValue("numThreads"));
-            if (cmd.getOptionValue("accessType", "Sequential").equals("Sequential")) {
-                MultiThreadedSequentialAccessEBSReader reader = new MultiThreadedSequentialAccessEBSReader(cmd.getOptionValue("inputPath"), numThreads, cmd.getOptionValue("pageCacheSize"));
+        String filesystem = cmd.getOptionValue("filesystem");
+        String accessType = cmd.getOptionValue("accessType", "Sequential");
+        int numThreads = Integer.parseInt(cmd.getOptionValue("numThreads"));
+        String inputPath = cmd.getOptionValue("inputPath");
+
+        if (filesystem.equals("ebs")){
+            if (accessType.equals("Sequential")) {
+                MultiThreadedSequentialAccessEBSReader reader = new MultiThreadedSequentialAccessEBSReader(
+                        inputPath,
+                        numThreads,
+                        cmd.getOptionValue("pageCacheSize"));
                 reader.read();
             } else {
-                MultiThreadedRandomAccessEBSReader reader = new MultiThreadedRandomAccessEBSReader(cmd.getOptionValue("inputPath"), numThreads, Long.parseLong(cmd.getOptionValue("numberOfRecords")), cmd.getOptionValue("recordSize"));
+                MultiThreadedRandomAccessEBSReader reader = new MultiThreadedRandomAccessEBSReader(
+                        inputPath, numThreads, Long.parseLong(cmd.getOptionValue("numberOfRecords")),
+                        cmd.getOptionValue("recordSize"));
                 reader.read();
             }
-        } else if (cmd.getOptionValue("filesystem").equals("fileServer")){
-            int numThreads = Integer.parseInt(cmd.getOptionValue("numThreads"));
-            MultiThreadedRandomAccessFileServerReader reader = new MultiThreadedRandomAccessFileServerReader(
-                    cmd.getOptionValue("inputPath"),
-                    cmd.getOptionValue("fileServerHost"), Integer.parseInt(cmd.getOptionValue("fileServerPort", "9000")),
-                    numThreads,
-                    Long.parseLong(cmd.getOptionValue("numberOfRecords")), cmd.getOptionValue("recordSize"),
-                    Integer.parseInt(cmd.getOptionValue("numberOfRecordsPerFileServerRequest")));
-            reader.read();
-        } else if (cmd.getOptionValue("filesystem").equals("s3v2")){
-            int numThreads = Integer.parseInt(cmd.getOptionValue("numThreads"));
-            MultiThreadedS3Version2SequentialAccessReader s3ReaderV2 = new MultiThreadedS3Version2SequentialAccessReader(cmd.getOptionValue("awsAccessKey"), cmd.getOptionValue("awsSecretKey"), cmd.getOptionValue("inputPath"), cmd.getOptionValue("pageCacheSize"), numThreads);
+        } else if (filesystem.equals("fileServer")){
+            if (accessType.equals("Sequential")) {
+                MultiThreadedSequentialFileServerReader reader = new MultiThreadedSequentialFileServerReader(
+                        inputPath,
+                        cmd.getOptionValue("fileServerHost"), Integer.parseInt(cmd.getOptionValue("fileServerPort", "9000")),
+                        numThreads,
+                        Long.parseLong(cmd.getOptionValue("pageCacheSize")),
+                        Long.parseLong(cmd.getOptionValue("dataPerFileServerRequest")));
+                reader.read();
+            } else {
+                MultiThreadedRandomAccessFileServerReader reader = new MultiThreadedRandomAccessFileServerReader(
+                        inputPath,
+                        cmd.getOptionValue("fileServerHost"), Integer.parseInt(cmd.getOptionValue("fileServerPort", "9000")),
+                        numThreads,
+                        Long.parseLong(cmd.getOptionValue("numberOfRecords")), cmd.getOptionValue("recordSize"),
+                        Integer.parseInt(cmd.getOptionValue("numberOfRecordsPerFileServerRequest")));
+                reader.read();
+            }
+        } else if (filesystem.equals("s3v2")){
+            MultiThreadedS3Version2SequentialAccessReader s3ReaderV2 = new MultiThreadedS3Version2SequentialAccessReader(cmd.getOptionValue("awsAccessKey"), cmd.getOptionValue("awsSecretKey"), inputPath, cmd.getOptionValue("pageCacheSize"), numThreads);
             s3ReaderV2.read();
         }
-        else if (cmd.getOptionValue("filesystem").equals("s3v1")){
-            int numThreads = Integer.parseInt(cmd.getOptionValue("numThreads"));
-            if (cmd.getOptionValue("accessType", "Sequential").equals("Sequential")) {
-                MultiThreadedS3Version1SequentialAccessReader s3ReaderV1 = new MultiThreadedS3Version1SequentialAccessReader(cmd.getOptionValue("awsAccessKey"), cmd.getOptionValue("awsSecretKey"), cmd.getOptionValue("inputPath"), cmd.getOptionValue("pageCacheSize"), numThreads);
+        else if (filesystem.equals("s3v1")){
+            if (accessType.equals("Sequential")) {
+                MultiThreadedS3Version1SequentialAccessReader s3ReaderV1 = new MultiThreadedS3Version1SequentialAccessReader(cmd.getOptionValue("awsAccessKey"), cmd.getOptionValue("awsSecretKey"), inputPath, cmd.getOptionValue("pageCacheSize"), numThreads);
                 s3ReaderV1.read();
             } else {
-                MultiThreadedS3Version1RandomAccessReader reader = new MultiThreadedS3Version1RandomAccessReader(cmd.getOptionValue("awsAccessKey"), cmd.getOptionValue("awsSecretKey"), cmd.getOptionValue("inputPath"), numThreads, Long.parseLong(cmd.getOptionValue("numberOfRecords")), cmd.getOptionValue("recordSize"));
+                MultiThreadedS3Version1RandomAccessReader reader = new MultiThreadedS3Version1RandomAccessReader(cmd.getOptionValue("awsAccessKey"), cmd.getOptionValue("awsSecretKey"), inputPath, numThreads, Long.parseLong(cmd.getOptionValue("numberOfRecords")), cmd.getOptionValue("recordSize"));
                 reader.read();
             }
         }
@@ -92,6 +108,9 @@ public class App {
         Option numberOfRecordsPerFileServerRequest = new Option("numberOfRecordsPerFileServerRequest", "numberOfRecordsPerFileServerRequest", true, "Number of records batched in each request to file server when filesystem option is fileServer");
         numberOfRecordsPerFileServerRequest.setRequired(false);
         options.addOption(numberOfRecordsPerFileServerRequest);
+        Option dataPerFileServerRequest = new Option("dataPerFileServerRequest", "dataPerFileServerRequest", true, "Number of records batched in each request to file server when filesystem option is fileServer");
+        dataPerFileServerRequest.setRequired(false);
+        options.addOption(dataPerFileServerRequest);
 
         return options;
     }

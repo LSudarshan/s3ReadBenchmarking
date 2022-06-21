@@ -1,35 +1,32 @@
 package s3.filesystem;
 
-import com.google.common.collect.Lists;
-
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class MultiThreadedRandomAccessFileServerReader {
+public class MultiThreadedSequentialFileServerReader {
 
     private final long totalLength;
-    private final int recordSize;
-    private int numberOfRecordsPerFileServerRequest;
-    private final long numberOfRecordsPerThread;
     private String fileName;
     private String fileServerHost;
     private int fileServerPort;
     private int numThreads;
+    private long bufferSize;
+    private long dataPerFileServerRequest;
 
-    public MultiThreadedRandomAccessFileServerReader(String fileName, String fileServerHost,
-                                                     int fileServerPort, int numThreads,
-                                                     long numberOfRecords, String recordSize,
-                                                     int numberOfRecordsPerFileServerRequest) throws IOException {
+    public MultiThreadedSequentialFileServerReader(String fileName, String fileServerHost,
+                                                   int fileServerPort, int numThreads,
+                                                   long bufferSize, long dataPerFileServerRequest) throws IOException {
         this.fileName = fileName;
         this.fileServerHost = fileServerHost;
         this.fileServerPort = fileServerPort;
         this.numThreads = numThreads;
-        this.recordSize = Integer.parseInt(recordSize);
-        this.numberOfRecordsPerFileServerRequest = numberOfRecordsPerFileServerRequest;
-        this.numberOfRecordsPerThread = numberOfRecords / numThreads;
+        this.bufferSize = bufferSize;
+        this.dataPerFileServerRequest = dataPerFileServerRequest;
         totalLength = getLengthFromFileServer(fileServerHost, fileServerPort, fileName);
     }
 
@@ -47,17 +44,7 @@ public class MultiThreadedRandomAccessFileServerReader {
             Thread thread = new Thread(() -> {
                 try {
                     System.out.println("Starting thread: " + Thread.currentThread().getId() + ", offset: " + finalStartOffset + ", end: " + (finalStartOffset + lengthPerThread));
-                    Socket socket = new Socket(fileServerHost, fileServerPort);
-                    try {
-                        OutputStream outputStream = socket.getOutputStream();
-                        InputStream inputStream = socket.getInputStream();
-                        openStreamAndRead(finalStartOffset, lengthPerThread, numberOfRecordsPerThread, recordSize,
-                                numberOfRecordsPerFileServerRequest, fileName, outputStream, inputStream);
-                        outputStream.write("CON_END".getBytes());
-                        outputStream.flush();
-                    } finally {
-                        socket.close();
-                    }
+                    openStreamAndRead(finalStartOffset, lengthPerThread, dataPerFileServerRequest, fileName, fileServerHost, fileServerPort, bufferSize);
                 } catch (IOException | InterruptedException | ExecutionException e) {
                     throw new RuntimeException(e);
                 }
@@ -81,24 +68,26 @@ public class MultiThreadedRandomAccessFileServerReader {
 
     private static void openStreamAndRead(long startOffsetForThread,
                                           long endOffsetForThread,
-                                          long numberOfRecordsPerThread,
-                                          int recordSize,
-                                          int numberOfRecordsPerFileServerRequest,
+                                          long dataPerFileServerRequest,
                                           String fileName,
-                                          OutputStream outputStream,
-                                          InputStream inputStream) throws InterruptedException, ExecutionException, IOException {
+                                          String fileServerHost,
+                                          int fileServerPort, long bufferSize) throws InterruptedException, ExecutionException, IOException {
         long t1 = System.currentTimeMillis();
-        Random random = new Random();
+
+
+
         List<Long> offsets = new ArrayList<>();
-        for (int i = 0; i < numberOfRecordsPerThread; i++) {
-            offsets.add(random.nextLong(startOffsetForThread, startOffsetForThread + endOffsetForThread - recordSize));
+        int numberOfRequests = (int)((endOffsetForThread - startOffsetForThread) / dataPerFileServerRequest);
+        long startOffset = startOffsetForThread;
+        for (int i = 0; i < numberOfRequests; i++) {
+            offsets.add(startOffset);
+            startOffset += dataPerFileServerRequest;
         }
-        System.out.println("Thread id: " + Thread.currentThread().getId() + ", number of offsets: " + offsets.size());
-        List<List<Long>> partitions = Lists.partition(offsets, numberOfRecordsPerFileServerRequest);
-        System.out.println("Thread id: " + Thread.currentThread().getId() + ", number of batches for offsets: " + partitions.size());
-        for (List<Long> partition : partitions) {
-            String requestForRecords = fileContentsRequest(partition, fileName, recordSize);
-            makeFileContentsRequest(requestForRecords, outputStream, inputStream, partition.size() * recordSize);
+        System.out.println("Thread id: " + Thread.currentThread().getId() + ", number of offsets: " + offsets.size() + ", with datasize in each offset: " + dataPerFileServerRequest);
+
+        for (Long offset : offsets) {
+            String requestForRecords = fileContentsRequest(fileName, offset, dataPerFileServerRequest);
+            makeFileContentsRequest(requestForRecords, fileServerHost, fileServerPort, bufferSize);
         }
         long t2 = System.currentTimeMillis();
         System.out.println("Thread id: " + Thread.currentThread().getId() + ", total time taken for all requests in a single thread : " + (t2-t1) + " ms");
@@ -110,53 +99,55 @@ public class MultiThreadedRandomAccessFileServerReader {
         OutputStream outputStream = socket.getOutputStream();
         InputStream inputStream = socket.getInputStream();
         StringBuilder stringBuilder = fileLengthRequest(fileName);
-        System.out.println("Sending request: " + stringBuilder);
         outputStream.write(stringBuilder.toString().getBytes());
-        outputStream.flush();
+        socket.shutdownOutput();
+
         byte[] buffer = new byte[1024];
-        inputStream.read(buffer);
-        outputStream.write("CON_END".getBytes());
-        outputStream.flush();
+        while(true){
+            int read = inputStream.read(buffer);
+            if(read == -1){
+                System.out.println("Received enf of stream");
+                break;
+            }
+            System.out.println("Read: " + read + " bytes");
+        }
         socket.close();
         String s = new String(buffer).trim();
         System.out.println("Received length: " + s);
         return Long.parseLong(s);
     }
-    private static String fileContentsRequest(List<Long> partition, String fileName, int recordLength) {
+    private static String fileContentsRequest(String fileName, Long offset, long recordLength) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("FILE_CONTENTS");
         stringBuilder.append("|");
         stringBuilder.append(fileName);
         stringBuilder.append("|");
-        for (long offset : partition) {
-            stringBuilder.append(offset + "," + recordLength);
-            stringBuilder.append("|");
-        }
-        stringBuilder.append("REQ_END");
+        stringBuilder.append(offset + "," + recordLength);
         return stringBuilder.toString();
     }
 
-    private static void makeFileContentsRequest(String requestForRecords, OutputStream outputStream, InputStream inputStream, int responseSize) throws IOException {
+    private static void makeFileContentsRequest(String requestForRecords, String fileServerHost, int fileServerPort, long bufferSize) throws IOException {
         System.out.println("Thread id: " + Thread.currentThread().getId() + ", Making request for a set of records");
         long t3 = System.currentTimeMillis();
+        Socket socket = new Socket(fileServerHost, fileServerPort);
+        OutputStream outputStream = socket.getOutputStream();
+        InputStream inputStream = socket.getInputStream();
         outputStream.write(requestForRecords.getBytes());
+        socket.shutdownOutput();
         long totalBytes = 0;
         while(true){
-            byte[] buffer = new byte[1024*1024*10];
+            byte[] buffer = new byte[(int)bufferSize];
             int read = inputStream.read(buffer);
             if(read == -1){
                 System.out.println("Received enf of stream");
                 break;
             }
             totalBytes += read;
-            if(totalBytes >= responseSize){
-                System.out.println("Completed reading all bytes for this batch: " + totalBytes);
-                break;
-            }
         }
         System.out.println("Thread id: " + Thread.currentThread().getId() + ", Total bytes read in request: " + totalBytes);
         long t4 = System.currentTimeMillis();
         System.out.println("Thread id: " + Thread.currentThread().getId() + ", total time taken for a single batched request: " + (t4-t3) + " ms");
+        socket.close();
     }
 
     private StringBuilder fileLengthRequest(String fileName) {
@@ -164,8 +155,6 @@ public class MultiThreadedRandomAccessFileServerReader {
         stringBuilder.append("FILE_LENGTH");
         stringBuilder.append("|");
         stringBuilder.append(fileName);
-        stringBuilder.append("|");
-        stringBuilder.append("REQ_END");
         return stringBuilder;
     }
 }
