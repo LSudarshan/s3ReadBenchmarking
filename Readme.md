@@ -9,7 +9,8 @@ The intent of this app is to test the sequential and random access read throughp
 |------------------------|-------------------------------------------|---------------------------------------------------------------------------------------|
 | S3 with S3AFilesystem  | 170 MB/s  - 10MB page cache and 7 threads | 5.48 MB/s - 8KB record size, 8KB page cache, 7 threads                                |
 | S3 with AWS SDK V2 api |                                           |                                                                                       |
-| EBS with NVME          | 190 MB/s - 10MB page cache and 7 Threads  | 35 MB/s -  8KB record size, 8KB page cache, 7 threads                                 |
+| EBS - 300 IOPs         | 190 MB/s - 10MB page cache and 7 Threads  | 35 MB/s -  8KB record size, 8KB page cache, 7 threads                                 |
+| EBS - 3000 IOPs        |   |                                                                                       |
 | Simple file server     | 80 MB/s  - 10MB page cache and 7 threads  | 24 MB/s - 8KB record size, 8KB page cache, 100 records batched per request, 7 threads |
 
 ### Building
